@@ -2,11 +2,11 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>響應重量監控頁面</title>
+  <title>2025 世界環境日｜撿菸蒂重量統計</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f7f7f7;
+      background: #f4f4f4;
       padding: 2rem;
       margin: 0;
     }
@@ -14,33 +14,46 @@
       text-align: center;
       margin-bottom: 2rem;
     }
-    .grid {
+    .grid-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-gap: 1.5rem;
     }
     .card {
       background: white;
+      border-radius: 1rem;
       padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    .card.large {
-      grid-column: span 4;
-      font-size: 1.5rem;
-      background: #e0f7fa;
+    .national {
+      grid-column: span 2;
+      grid-row: span 2;
+      background: #e3f2fd;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
     }
-    .region-title {
-      font-size: 1.2rem;
+    .title {
+      font-size: 1.25rem;
       font-weight: bold;
       margin-bottom: 0.5rem;
     }
-    .region-weight {
+    .national .title {
       font-size: 2rem;
-      color: #00796b;
       margin-bottom: 1rem;
     }
-    .subregion {
+    .value {
+      font-size: 2rem;
+      color: #1976d2;
+      font-weight: bold;
+    }
+    .national .value {
+      font-size: 3.5rem;
+    }
+    .subregions {
+      margin-top: 1rem;
       font-size: 0.9rem;
       color: #555;
       line-height: 1.5;
@@ -48,75 +61,141 @@
   </style>
 </head>
 <body>
-  <h1>全國響應重量監控頁面</h1>
-  <div class="grid" id="cards"></div>
+  <h1>全國響應重量監控</h1>
+  <div class="grid-container">
+    <div class="card national">
+      <div class="title">全國響應重量</div>
+      <div class="value" id="totalWeight">0 公斤</div>
+    </div>
+
+    <div class="card">
+      <div class="title">東區響應重量</div>
+      <div class="value" id="eastWeight">0 公斤</div>
+      <div class="subregions" id="eastSubregions"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">北區響應重量</div>
+      <div class="value" id="northWeight">0 公斤</div>
+      <div class="subregions" id="northSubregions"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">桃竹苗區響應重量</div>
+      <div class="value" id="taoWeight">0 公斤</div>
+      <div class="subregions" id="taoSubregions"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">中區響應重量</div>
+      <div class="value" id="midWeight">0 公斤</div>
+      <div class="subregions" id="midSubregions"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">南區響應重量</div>
+      <div class="value" id="southWeight">0 公斤</div>
+      <div class="subregions" id="southSubregions"></div>
+    </div>
+  </div>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbzO2OPR0eCwfAt8DYzr2ypDzzGq6hIBH7642qGHKMTgKwUd5gkQ_cTEgKqAsftJyy_YcA/exec?action=subregionSummary";
-
-    const regionMap = {
-      "東區": ["花東縣市區"],
-      "北區": ["基宜縣市區", "台北市區", "新北市區"],
-      "桃竹苗區": ["桃園市區", "竹苗縣市區"],
-      "中區": ["台中市一區", "台中市二區", "彰化縣市區", "南投縣市區"],
-      "南區": ["雲嘉縣市區", "台南市區", "高市金澎區", "高屏縣市區"]
+    let currentValues = {
+      totalWeight: 0,
+      eastWeight: 0,
+      northWeight: 0,
+      taoWeight: 0,
+      midWeight: 0,
+      southWeight: 0
     };
 
-    async function fetchData() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      const groups = {};
-      let nationalTotal = 0;
+    const regionMap = {
+      "花東縣市區": { area: "eastWeight", sub: "eastSubregions" },
+      "基宜縣市區": { area: "northWeight", sub: "northSubregions" },
+      "台北市區": { area: "northWeight", sub: "northSubregions" },
+      "新北市區": { area: "northWeight", sub: "northSubregions" },
+      "桃園市區": { area: "taoWeight", sub: "taoSubregions" },
+      "竹苗縣市區": { area: "taoWeight", sub: "taoSubregions" },
+      "台中市一區": { area: "midWeight", sub: "midSubregions" },
+      "台中市二區": { area: "midWeight", sub: "midSubregions" },
+      "彰化縣市區": { area: "midWeight", sub: "midSubregions" },
+      "南投縣市區": { area: "midWeight", sub: "midSubregions" },
+      "雲嘉縣市區": { area: "southWeight", sub: "southSubregions" },
+      "台南市區": { area: "southWeight", sub: "southSubregions" },
+      "高市金澎區": { area: "southWeight", sub: "southSubregions" },
+      "高屏縣市區": { area: "southWeight", sub: "southSubregions" }
+    };
 
-      // 初始化每區
-      for (const region in regionMap) {
-        groups[region] = { total: 0, subregions: {} };
-        for (const sub of regionMap[region]) {
-          groups[region].subregions[sub] = 0;
+    function animateNumber(id, startValue, endValue, duration) {
+      const element = document.getElementById(id);
+      const increment = (endValue - startValue) / (duration / 16);
+      let current = startValue;
+
+      function update() {
+        current += increment;
+        if ((increment > 0 && current < endValue) || (increment < 0 && current > endValue)) {
+          element.textContent = Math.floor(current).toLocaleString() + ' 公斤';
+          requestAnimationFrame(update);
+        } else {
+          element.textContent = endValue.toLocaleString() + ' 公斤';
+          currentValues[id] = endValue;
         }
       }
-
-      data.forEach(row => {
-        const [region, subregion, , weight] = row;
-        const w = parseFloat(weight) || 0;
-        nationalTotal += w;
-        if (groups[region] && groups[region].subregions[subregion] !== undefined) {
-          groups[region].total += w;
-          groups[region].subregions[subregion] += w;
-        }
-      });
-
-      renderCards(nationalTotal, groups);
+      update();
     }
 
-    function renderCards(nationalTotal, groups) {
-      const container = document.getElementById('cards');
-      container.innerHTML = '';
+    async function fetchWeightFromBackend() {
+      try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbzO2OPR0eCwfAt8DYzr2ypDzzGq6hIBH7642qGHKMTgKwUd5gkQ_cTEgKqAsftJyy_YcA/exec");
+        const data = await response.json();
 
-      // 全國卡片
-      container.innerHTML += `
-        <div class="card large">
-          <div class="region-title">全國響應總重量</div>
-          <div class="region-weight">${nationalTotal.toLocaleString()} 公斤</div>
-        </div>`;
+        let total = 0;
+        let areaTotals = {
+          eastWeight: 0,
+          northWeight: 0,
+          taoWeight: 0,
+          midWeight: 0,
+          southWeight: 0
+        };
 
-      // 各大區卡片
-      for (const region in groups) {
-        const total = groups[region].total.toLocaleString();
-        const subs = Object.entries(groups[region].subregions).map(
-          ([name, val]) => `${name}響應重量：${val.toLocaleString()} 公斤`
-        ).join('<br>');
+        let subregionText = {
+          eastSubregions: [],
+          northSubregions: [],
+          taoSubregions: [],
+          midSubregions: [],
+          southSubregions: []
+        };
 
-        container.innerHTML += `
-          <div class="card">
-            <div class="region-title">${region}響應總重量</div>
-            <div class="region-weight">${total} 公斤</div>
-            <div class="subregion">${subs}</div>
-          </div>`;
+        for (const row of data) {
+          const areaName = row["小區"];
+          const weight = parseFloat(row["重量（公斤）"]);
+          if (!isNaN(weight)) {
+            total += weight;
+            const region = regionMap[areaName];
+            if (region) {
+              areaTotals[region.area] += weight;
+              subregionText[region.sub].push(`${areaName}：${weight.toLocaleString()} 公斤`);
+            }
+          }
+        }
+
+        animateNumber("totalWeight", currentValues.totalWeight, total, 1500);
+        for (const key in areaTotals) {
+          animateNumber(key, currentValues[key], areaTotals[key], 1500);
+        }
+        for (const key in subregionText) {
+          document.getElementById(key).innerHTML = subregionText[key].join("<br>");
+        }
+
+      } catch (error) {
+        console.error("資料讀取失敗：", error);
       }
     }
 
-    fetchData();
+    document.addEventListener("DOMContentLoaded", function () {
+      fetchWeightFromBackend();
+      setInterval(fetchWeightFromBackend, 5000);
+    });
   </script>
 </body>
 </html>
