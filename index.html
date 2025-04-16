@@ -184,7 +184,7 @@
 
     async function fetchWeightFromBackend() {
       try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbzO2OPR0eCwfAt8DYzr2ypDzzGq6hIBH7642qGHKMTgKwUd5gkQ_cTEgKqAsftJyy_YcA/exec");
+        const response = await fetch("https://script.google.com/macros/s/AKfycbzO2OPR0eCwfAt8DYzr2ypDzzGq6hIBH7642qGHKMTgKwUd5gkQ_cTEgKqAsftJyy_YcA/exec?action=subregionSummary");
         const data = await response.json();
 
         const areaData = {
