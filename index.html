@@ -146,100 +146,61 @@
   </div>
 
   <script>
-    let currentValue = 0;
+    const apiUrl = "https://script.google.com/macros/s/AKfycbzO2OPR0eCwfAt8DYzr2ypDzzGq6hIBH7642qGHKMTgKwUd5gkQ_cTEgKqAsftJyy_YcA/exec?action=subregionSummary";
 
-    const regionMap = {
-      "花東縣市區": "eastSub",
-      "基宜縣市區": "northSub",
-      "台北市區": "northSub",
-      "新北市區": "northSub",
-      "桃園市區": "taozhumiaoSub",
-      "竹苗縣市區": "taozhumiaoSub",
-      "台中市一區": "centralSub",
-      "台中市二區": "centralSub",
-      "彰化縣市區": "centralSub",
-      "南投縣市區": "centralSub",
-      "雲嘉縣市區": "southSub",
-      "台南市區": "southSub",
-      "高市金澎區": "southSub",
-      "高屏縣市區": "southSub"
+    const regionGroups = {
+      eastSub: ["花東縣市區"],
+      northSub: ["基宜縣市區", "台北市區", "新北市區"],
+      taozhumiaoSub: ["桃園市區", "竹苗縣市區"],
+      centralSub: ["台中市一區", "台中市二區", "彰化縣市區", "南投縣市區"],
+      southSub: ["雲嘉縣市區", "台南市區", "高市金澎區", "高屏縣市區"]
     };
 
-    function animateNumber(id, startValue, endValue, duration) {
-      const element = document.getElementById(id);
-      const increment = (endValue - startValue) / (duration / 16);
-      let current = startValue;
-
-      function update() {
-        current += increment;
-        if ((increment > 0 && current < endValue) || (increment < 0 && current > endValue)) {
-          element.textContent = Math.floor(current).toLocaleString() + ' 公斤';
-          requestAnimationFrame(update);
-        } else {
-          element.textContent = endValue.toLocaleString() + ' 公斤';
-        }
-      }
-      update();
-    }
-
-    async function fetchWeightFromBackend() {
+    async function fetchData() {
       try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbzO2OPR0eCwfAt8DYzr2ypDzzGq6hIBH7642qGHKMTgKwUd5gkQ_cTEgKqAsftJyy_YcA/exec?action=subregionSummary");
-        const data = await response.json();
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        console.log("✅ 回傳資料：", data);
 
-        const areaData = {
-          eastSub: {},
-          northSub: {},
-          taozhumiaoSub: {},
-          centralSub: {},
-          southSub: {}
-        };
+        const total = data.total;
+        const bySubregion = data.bySubregion || {};
 
-        const areaTotal = {
-          eastSub: 0,
-          northSub: 0,
-          taozhumiaoSub: 0,
-          centralSub: 0,
-          southSub: 0
-        };
-
-        let nationalTotal = 0;
-
-        for (const row of data) {
-          const sub = row["小區"];
-          const weight = parseFloat(row["重量（公斤）"]);
-          if (!isNaN(weight)) {
-            nationalTotal += weight;
-            const areaId = regionMap[sub];
-            if (areaId) {
-              if (!areaData[areaId][sub]) areaData[areaId][sub] = 0;
-              areaData[areaId][sub] += weight;
-              areaTotal[areaId] += weight;
-            }
+        // 顯示總重量動畫
+        const nationalWeightEl = document.getElementById("nationalWeight");
+        let current = 0;
+        const step = (total - current) / 30;
+        function animate() {
+          current += step;
+          if (current < total) {
+            nationalWeightEl.textContent = Math.floor(current).toLocaleString() + " 公斤";
+            requestAnimationFrame(animate);
+          } else {
+            nationalWeightEl.textContent = total.toLocaleString() + " 公斤";
           }
         }
+        animate();
 
-        animateNumber("nationalWeight", currentValue, nationalTotal, 1500);
-        currentValue = nationalTotal;
+        // 更新各小區加總
+        for (const regionId in regionGroups) {
+          let total = 0;
+          const lines = regionGroups[regionId].map(name => {
+            const val = bySubregion[name] || 0;
+            total += val;
+            return `${name}：${val.toLocaleString()} 公斤`;
+          });
 
-        for (const areaId in areaData) {
-          const container = document.getElementById(areaId);
-          const lines = Object.entries(areaData[areaId])
-            .map(([name, val]) => `${name}：${val.toLocaleString()} 公斤`).join("<br>");
-          container.innerHTML = lines;
-
-          const totalId = areaId.replace("Sub", "Total");
-          document.getElementById(totalId).textContent = areaTotal[areaId].toLocaleString() + " 公斤";
+          document.getElementById(regionId).innerHTML = lines.join("<br>");
+          const totalId = regionId.replace("Sub", "Total");
+          document.getElementById(totalId).textContent = total.toLocaleString() + " 公斤";
         }
-
-      } catch (error) {
-        console.error("資料讀取失敗：", error);
+      } catch (e) {
+        console.error("❌ 資料讀取失敗：", e);
       }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-      fetchWeightFromBackend();
-      setInterval(fetchWeightFromBackend, 5000);
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchData();
+      setInterval(fetchData, 5000);
     });
   </script>
 </body>
