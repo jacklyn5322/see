@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>響應重量監控頁面</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f7f7f7;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .card.large {
+      grid-column: span 4;
+      font-size: 1.5rem;
+      background: #e0f7fa;
+    }
+    .region-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .region-weight {
+      font-size: 2rem;
+      color: #00796b;
+      margin-bottom: 1rem;
+    }
+    .subregion {
+      font-size: 0.9rem;
+      color: #555;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>全國響應重量監控頁面</h1>
+  <div class="grid" id="cards"></div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbx126ktqurKHWg8TmFVp0xNUApMZKpArHfH7xTeYoI02rl7B8RBOqfk2A-KeWbyXLFN5w/exec";
+
+    const regionMap = {
+      "東區": ["花東縣市區"],
+      "北區": ["基宜縣市區", "台北市區", "新北市區"],
+      "桃竹苗區": ["桃園市區", "竹苗縣市區"],
+      "中區": ["台中市一區", "台中市二區", "彰化縣市區", "南投縣市區"],
+      "南區": ["雲嘉縣市區", "台南市區", "高市金澎區", "高屏縣市區"]
+    };
+
+    async function fetchData() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      const groups = {};
+      let nationalTotal = 0;
+
+      // 初始化每區
+      for (const region in regionMap) {
+        groups[region] = { total: 0, subregions: {} };
+        for (const sub of regionMap[region]) {
+          groups[region].subregions[sub] = 0;
+        }
+      }
+
+      data.forEach(row => {
+        const [region, subregion, , weight] = row;
+        const w = parseFloat(weight) || 0;
+        nationalTotal += w;
+        if (groups[region] && groups[region].subregions[subregion] !== undefined) {
+          groups[region].total += w;
+          groups[region].subregions[subregion] += w;
+        }
+      });
+
+      renderCards(nationalTotal, groups);
+    }
+
+    function renderCards(nationalTotal, groups) {
+      const container = document.getElementById('cards');
+      container.innerHTML = '';
+
+      // 全國卡片
+      container.innerHTML += `
+        <div class="card large">
+          <div class="region-title">全國響應總重量</div>
+          <div class="region-weight">${nationalTotal.toLocaleString()} 公斤</div>
+        </div>`;
+
+      // 各大區卡片
+      for (const region in groups) {
+        const total = groups[region].total.toLocaleString();
+        const subs = Object.entries(groups[region].subregions).map(
+          ([name, val]) => `${name}響應重量：${val.toLocaleString()} 公斤`
+        ).join('<br>');
+
+        container.innerHTML += `
+          <div class="card">
+            <div class="region-title">${region}響應總重量</div>
+            <div class="region-weight">${total} 公斤</div>
+            <div class="subregion">${subs}</div>
+          </div>`;
+      }
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>
